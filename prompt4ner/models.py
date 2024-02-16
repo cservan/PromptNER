@@ -9,11 +9,12 @@ from prompt4ner.modeling_xlm_roberta import XLMRobertaConfig
 from transformers.modeling_utils import PreTrainedModel
 from prompt4ner import util
 import logging
+import sys
 
 logger = logging.getLogger()
 
 class EntityBoundaryPredictor(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, prop_drop):
         super().__init__()
         self.hidden_size = config.hidden_size
         self.token_embedding_linear = nn.Sequential(
@@ -281,9 +282,20 @@ class Prompt4NER(PreTrainedModel):
 
         if self.lstm_layers > 0:
             self.lstm = nn.LSTM(input_size = config.hidden_size, hidden_size = config.hidden_size//2, num_layers = lstm_layers,  bidirectional = True, dropout = 0.1, batch_first = True)
-
-        self.left_boundary_classfier = EntityBoundaryPredictor(config, self.prop_drop)
-        self.right_boundary_classfier = EntityBoundaryPredictor(config, self.prop_drop)
+        try:
+            self.left_boundary_classfier = EntityBoundaryPredictor(config, self.prop_drop)
+        except TypeError as te:
+            print(te)
+            print(config)
+            print(self.prop_drop)
+            sys.exit(1)
+        try:
+            self.right_boundary_classfier = EntityBoundaryPredictor(config, self.prop_drop)
+        except TypeError as te:
+            print(te)
+            print(config)
+            print(self.prop_drop)
+            sys.exit(1)
         # self.entity_classifier = EntityTypePredictor(config, config.hidden_size, entity_type_count)
         self.init_weights()
 

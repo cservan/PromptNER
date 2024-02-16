@@ -7,6 +7,7 @@ import random
 import json
 import pynvml
 import numpy as np
+import sys
 
 pynvml.nvmlInit()
 
@@ -112,6 +113,8 @@ def process_configs(target, arg_parser):
 def _read_config(path):
     lines = open(path).readlines()
 
+    line_cpt = 0
+
     runs = []
     run = [1, dict()]
     for line in lines:
@@ -131,9 +134,15 @@ def _read_config(path):
             repeat = int(stripped_line[1:-1])
             run[0] = repeat
         else:
-            key, value = stripped_line.split('=')
-            key, value = (key.strip(), value.strip())
-            run[1][key] = value
+            try:
+                key, value = stripped_line.split('=')
+                key, value = (key.strip(), value.strip())
+                run[1][key] = value
+            except ValueError as ve:
+                print("Error line " + str(line_cpt) + " : ")
+                print(ve)
+                sys.exit(1)
+        line_cpt = line_cpt + 1
 
     if run[1]:
         runs.append(run)
