@@ -66,6 +66,7 @@ def train_argparser():
     # Input
     arg_parser.add_argument('--train_path', type=str, help="Path to train dataset")
     arg_parser.add_argument('--valid_path', type=str, help="Path to validation dataset")
+    arg_parser.add_argument('--test_path', type=str, help="Path to final evaluation test dataset", default=None)
 
     # Logging
     arg_parser.add_argument('--save_path', type=str, help="Path to directory where model checkpoints are stored")

@@ -103,17 +103,18 @@ class Prompt4NERTrainer(BaseTrainer):
                                             prompt_token_ids = input_reader.prompt_token_ids)
         return model
 
-    def train(self, train_path: str, valid_path: str, types_path: str, input_reader_cls: BaseInputReader):
+    def train(self, train_path: str, valid_path: str, types_path: str, input_reader_cls: BaseInputReader, test_path: str = None):
         args = self.args
-        train_label, valid_label = 'train', 'valid'
+        train_label, valid_label, test_label = 'train', 'valid', 'test'
 
         if self.record:
-            self._logger.info("Datasets: %s, %s" % (train_path, valid_path))
+            self._logger.info("Datasets: %s, %s, %s" % (train_path, valid_path, test_path))
             self._logger.info("Model type: %s" % args.model_type)
 
             # create log csv files
             self._init_train_logging(train_label)
             self._init_eval_logging(valid_label)
+            self._init_eval_logging(test_label)
 
         # read datasets
         input_reader = input_reader_cls(
@@ -127,7 +128,7 @@ class Prompt4NERTrainer(BaseTrainer):
             prompt_type = args.prompt_type,
             prompt_number = args.prompt_number)
             
-        input_reader.read({train_label: train_path, valid_label: valid_path})
+        input_reader.read({train_label: train_path, valid_label: valid_path, test_label: test_path})
 
         if self.local_rank < 1:
             self._log_datasets(input_reader)
@@ -143,6 +144,9 @@ class Prompt4NERTrainer(BaseTrainer):
         updates_total_stage_two = updates_epoch * (args.epochs - args.split_epoch)
 
         validation_dataset = input_reader.get_dataset(valid_label)
+        evaluation_dataset = None
+        if test_path != None:
+            evaluation_dataset = input_reader.get_dataset(test_label)
 
         if self.record:
             self._logger.info("Updates per epoch: %s" % updates_epoch)
@@ -198,6 +202,9 @@ class Prompt4NERTrainer(BaseTrainer):
                             optimizer=optimizer if args.save_optimizer else None, extra=extra,
                             include_iteration=args.save_path_include_iteration, name='model')
                 self._logger.info(f"Best F1 score: {best_f1}, achieved at Epoch: {best_epoch}")
+
+        # Final evaluation if evaluation is set
+        testf1 = self._eval(model, evaluation_dataset, input_reader, best_epoch, 0)
 
         # save final model
         extra = dict(epoch=args.epochs, updates_epoch=updates_epoch, epoch_iteration=0)

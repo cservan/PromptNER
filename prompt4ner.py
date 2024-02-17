@@ -11,8 +11,11 @@ warnings.filterwarnings("ignore")
 
 def __train(run_args):
     trainer = Prompt4NERTrainer(run_args)
-    trainer.train(train_path=run_args.train_path, valid_path=run_args.valid_path,
+    trainer.train(train_path=run_args.train_path, valid_path=run_args.valid_path, test_path=run_args.test_path,
                   types_path=run_args.types_path, input_reader_cls=input_reader.JsonInputReader)
+    #if run_args.test_path != None:
+        #trainer.eval(dataset_path=run_args.test_path, types_path=run_args.types_path,
+                    #input_reader_cls=input_reader.JsonInputReader)
 
 
 def _train():
