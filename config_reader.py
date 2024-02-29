@@ -21,11 +21,11 @@ def process_configs(target, arg_parser):
     else:
         all_gpu_queue = [0, 1, 2, 3, 4, 5, 6, 7]
     gpu_queue = []
-    waittime = 300
+    waittime = 3
     gpu_just_used = []
     for run_args, _run_config, _run_repeat in _yield_configs(arg_parser, args):
         if "eval" in run_args.label:
-            waittime = 90
+            waittime = 9
             if "genia" in run_args.dataset_path:
                 waittime = 180
             if "fewnerd" in run_args.dataset_path:
@@ -43,18 +43,25 @@ def process_configs(target, arg_parser):
             candidate_gpu = list(set(all_gpu_queue) - set(gpu_just_used))
             for index in candidate_gpu:
                 try:
+                    print(index, candidate_gpu)
                     handle = pynvml.nvmlDeviceGetHandleByIndex(index)
                     meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
                     free = meminfo.free//(1024*1024)
+                    print(run_args.world_size, free,meminfo)
                     if run_args.world_size>0:
                         gpu_queue.extend([(index, free)])
+                        print("test1", gpu_queue)
                     elif (("eval" in run_args.label) or ("base" in  run_args.model_path)):
                         gpu_queue.extend([(index, free)]*(free//24000))
+                        print("test2", gpu_queue)
                     else:
                         gpu_queue.extend([(index, free)]*(free//40000))
+                        print("test3", gpu_queue)
                     
                 except Exception as e:
+                    print(e)
                     pass
+            print(gpu_queue)
             gpu_queue = sorted(gpu_queue, key=lambda x:x[1], reverse=True)
             print(dict(set(gpu_queue)))
             if len(gpu_queue)<run_args.world_size:

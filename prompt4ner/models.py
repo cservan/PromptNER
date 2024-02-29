@@ -268,8 +268,8 @@ class Prompt4NER(PreTrainedModel):
         if model_type == "albert":
             # self.bert = BertModel(config)
             self.prompt_ids = prompt_token_ids
-            self.bert = AlbertModel(config)
-            self.model = self.bert
+            self.albert = AlbertModel(config)
+            self.model = self.albert
             self.predictions = AlbertMLMHead(config)
             self.entity_classifier = EntityTypePredictor(config, entity_type_count, lambda x: self.predictions(x))
 
@@ -345,6 +345,8 @@ class Prompt4NER(PreTrainedModel):
             model = self.bert
         if self.model_type == "roberta":
             model = self.roberta
+        if self.model_type == "albert":
+            model = self.albert
         # model.embeddings.position_embeddings
         outputs = model(
                     input_ids=encodings,
@@ -358,6 +360,8 @@ class Prompt4NER(PreTrainedModel):
         if self.use_masked_lm and self.training:
             if self.model_type == "bert":
                 masked_seq_logits = self.cls(outputs.last_hidden_state)
+            if self.model_type == "albert":
+                masked_seq_logits = self.predictions(outputs.last_hidden_state)
             if self.model_type == "roberta":
                 masked_seq_logits = self.lm_head(outputs.last_hidden_state)
 
@@ -485,7 +489,11 @@ _MODELS = {
     'prompt4ner': BertPrompt4NER,
     'roberta_prompt4ner': RobertaPrompt4NER,
     'xlmroberta_prompt4ner': XLMRobertaPrompt4NER,
-    'albert_prompt4ner': AlbertPrompt4NER
+    'albert_prompt4ner': AlbertPrompt4NER,
+    'bert': BertPrompt4NER,
+    'roberta': RobertaPrompt4NER,
+    'xlmroberta': XLMRobertaPrompt4NER,
+    'albert': AlbertPrompt4NER
 }
 
 def get_model(name):
